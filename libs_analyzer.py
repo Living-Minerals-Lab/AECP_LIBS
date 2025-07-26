@@ -438,4 +438,12 @@ class LIBSAnalyzer:
 
         return areas
     
+    def set_export_folder_path(self, new_path: str) -> None:
+        """
+        Set a new export folder path.
+
+        Args:
+            new_path (str): The new path to set as the export folder.
+        """
+        self.export_folder_path = new_path
     
