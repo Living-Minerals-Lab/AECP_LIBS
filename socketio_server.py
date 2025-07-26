@@ -47,6 +47,7 @@ class Z300SocketIOServer(LIBSAnalyzer):
         self.sio.on('export', self.on_export)
         self.sio.on('analyze', self.on_analyze)
         self.sio.on('find_buttons', self.on_find_buttons)
+        self.sio.on('change_export_path', self.on_change_export_path)
 
     # @override
     # def measure(self):
@@ -183,6 +184,18 @@ class Z300SocketIOServer(LIBSAnalyzer):
     # def on_set_desktop_id(self, sid, data):
     #     self.desktop_id = data
     #     print(f'Virtual desktop id for Profile Builder has been set to {self.desktop_id}.')
+
+    def on_change_export_path(self, sid, new_path: str):
+        if self.status == AnalyzerStatus.RUNNING:
+            return 'The analyzer is currently running. Please wait until it is done.'
+        else:
+            try:
+                self.set_export_folder_path(new_path)
+            except Exception as e:
+                print(e)
+                return str(e)
+            else:
+                return 'success'
 
     def update_status(self):
         while True:
