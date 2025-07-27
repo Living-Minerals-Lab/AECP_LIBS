@@ -12,6 +12,7 @@ from enum import Enum
 import time
 import threading
 from libs_analyzer import LIBSAnalyzer, AnalyzerStatus, DeviceRunningError, TimeOutError, ButtonNotFoundError, UnkonwnButtonNameError
+from flask import Flask, request, jsonify
 
 class Z300SocketIOServer(LIBSAnalyzer):
     """
@@ -31,18 +32,24 @@ class Z300SocketIOServer(LIBSAnalyzer):
                  time_out):
         
         self.sio = socketio.Server(cors_allowed_origins='*', async_mode='eventlet')
-        self.app = socketio.WSGIApp(self.sio)
+        # Initialize Flask app for HTTP endpoints
+        self.flask_app = Flask(__name__)
+        self.app = socketio.WSGIApp(self.sio, self.flask_app)
 
         super().__init__(cache_folder_path, export_folder_path, measure_button_img_path, sample_name_input_img_path,
                          export_button_img_path, separate_spectrum_button_img_path, new_folder_button_img_path, 
                          export_finish_button_img_path, delete_button_img_path, sync_button_img_path, time_out, sleep_func=self.sio.sleep)
-        
-        # self.libs_analyzer = LIBSAnalyzer(cache_folder_path='C:/Users/LIBS_VM/sciaps/cache', export_folder_path='Y:/')
-        
+
+        # Register HTTP routes
+        self.flask_app.route('/measure', methods=['POST'])(self.http_measure)
+        self.flask_app.route('/export', methods=['POST'])(self.http_export)
+        self.flask_app.route('/analyze', methods=['POST'])(self.http_analyze)
+        self.flask_app.route('/find_buttons', methods=['GET'])(self.http_find_buttons)
+        self.flask_app.route('/change_export_path', methods=['POST'])(self.http_change_export_path)
+        self.flask_app.route('/status', methods=['GET'])(self.http_status)
+    
         self.sio.on('connect', self.on_connect)
         self.sio.on('disconnect', self.on_disconnect)
-        # self.sio.on('pull_trigger', self.on_pull_trigger)
-        # self.sio.on('set_desktop_id', self.on_set_desktop_id)
         self.sio.on('measure', self.on_measure)
         self.sio.on('export', self.on_export)
         self.sio.on('analyze', self.on_analyze)
@@ -196,6 +203,72 @@ class Z300SocketIOServer(LIBSAnalyzer):
                 return str(e)
             else:
                 return 'success'
+
+    # HTTP endpoint handlers
+    def http_measure(self):
+        """HTTP endpoint for measure operation"""
+        if self.status == AnalyzerStatus.RUNNING:
+            return jsonify({'error': 'The analyzer is currently running. Please wait until it is done.'}), 409
+        else:
+            try:
+                self.measure()
+                return jsonify({'message': 'Measurement completed successfully'}), 200
+            except Exception as e:
+                print(e)
+                return jsonify({'error': str(e)}), 500
+    
+    def http_export(self):
+        """HTTP endpoint for export operation"""
+        if self.status == AnalyzerStatus.RUNNING:
+            return jsonify({'error': 'The analyzer is currently running. Please wait until it is done.'}), 409
+        else:
+            try:
+                self.export()
+                return jsonify({'message': 'Export completed successfully'}), 200
+            except Exception as e:
+                print(e)
+                return jsonify({'error': str(e)}), 500
+    
+    def http_analyze(self):
+        """HTTP endpoint for analyze operation"""
+        if self.status == AnalyzerStatus.RUNNING:
+            return jsonify({'error': 'The analyzer is currently running. Please wait until it is done.'}), 409
+        else:
+            try:
+                res = self.analyze()
+                return jsonify({'message': 'Analysis completed successfully', 'result': res}), 200
+            except Exception as e:
+                return jsonify({'error': str(e), 'result': {'not_found': 0.0}}), 500
+
+    def http_find_buttons(self):
+        """HTTP endpoint for find buttons operation"""
+        try:
+            self.find_all_buttons()
+            button_positions = [self.buttons[button]['pos'] for button in self.buttons]
+            return jsonify({'button_positions': button_positions}), 200
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    def http_change_export_path(self):
+        """HTTP endpoint for changing export path"""
+        if self.status == AnalyzerStatus.RUNNING:
+            return jsonify({'error': 'The analyzer is currently running. Please wait until it is done.'}), 409
+        else:
+            try:
+                data = request.get_json()
+                if not data or 'new_path' not in data:
+                    return jsonify({'error': 'new_path parameter is required'}), 400
+                
+                new_path = data['new_path']
+                self.set_export_folder_path(new_path)
+                return jsonify({'message': f'Export path changed to {new_path}'}), 200
+            except Exception as e:
+                print(e)
+                return jsonify({'error': str(e)}), 500
+
+    def http_status(self):
+        """HTTP endpoint for getting current status"""
+        return jsonify({'status': self.status.name}), 200
 
     def update_status(self):
         while True:
