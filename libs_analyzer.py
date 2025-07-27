@@ -1,3 +1,4 @@
+# save first line for Fortuna
 import numpy as np
 import cv2
 import imutils
@@ -200,6 +201,9 @@ class LIBSAnalyzer:
             self.sample_name = self._name_after_time()
             print('------------------------export started------------------------')
             try:
+                if not os.path.exists(self.export_folder_path):
+                    os.makedirs(self.export_folder_path)
+                
                 n = len(os.listdir(self.export_folder_path))
                 # follow the steps below
                 # 0. type in sample name

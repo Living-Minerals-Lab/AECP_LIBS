@@ -1,3 +1,4 @@
+# Save first line for Fortuna
 from calendar import TUESDAY
 from typing import override
 import os
@@ -13,6 +14,8 @@ import time
 import threading
 from libs_analyzer import LIBSAnalyzer, AnalyzerStatus, DeviceRunningError, TimeOutError, ButtonNotFoundError, UnkonwnButtonNameError
 from flask import Flask, request, jsonify
+import argparse
+
 
 class Z300SocketIOServer(LIBSAnalyzer):
     """
@@ -277,8 +280,12 @@ class Z300SocketIOServer(LIBSAnalyzer):
         
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Z300SocketIOServer")
+    parser.add_argument('export_folder_path', type=str, help='Path to the export folder, e.g. C:/Users/Whittaker/Documents/20250623Scanning')
+    args = parser.parse_args()
+    
     z300_web_server = Z300SocketIOServer(cache_folder_path='C:/Users/Whittaker/sciaps/cache/Z300-0915', 
-                                         export_folder_path='C:/Users/Whittaker/Documents/20250623Scanning',
+                                         export_folder_path=args.export_folder_path,
                                          measure_button_img_path='button_templates/measure_button.png',
                                          sample_name_input_img_path='button_templates/sample_name_input.png',
                                          export_button_img_path='button_templates/export_button.png',
