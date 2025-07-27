@@ -277,6 +277,7 @@ class Z300SocketIOServer(LIBSAnalyzer):
         while True:
             self.sio.sleep(0.5)
             self.sio.emit('status', self.status.name)
+            self.sio.emit('export_path', self.export_folder_path)
         
 
 if __name__ == '__main__':
