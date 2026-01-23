@@ -1,3 +1,4 @@
+# save first line for Fortuna
 import numpy as np
 import cv2
 import imutils
@@ -10,6 +11,7 @@ from typing import Tuple, List, Dict
 from pyvda import AppView, get_apps_by_z_order, VirtualDesktop, get_virtual_desktops
 from collections.abc import Callable
 import pandas as pd
+import json
 
 
 class AnalyzerStatus(Enum):
@@ -45,14 +47,14 @@ class LIBSAnalyzer:
 
     def __init__(self, cache_folder_path: str, 
                  export_folder_path: str, 
-                 measure_button_img_path: str = 'measure_button.png',
-                 sample_name_input_img_path: str = 'sample_name_input.png', 
-                 export_button_img_path: str = 'export_button.png',
-                 separate_spectrum_button_img_path: str = 'separate_spectrum_button.png',
-                 new_folder_button_img_path: str = 'new_folder_button.png',
-                 export_finish_button_img_path: str = 'export_finish_button.png',
-                 delete_button_img_path: str = 'delete_button.png',
-                 sync_button_img_path: str = 'sync_button.png',
+                 measure_button_img_path: str = 'button_templates/measure_button.png',
+                 sample_name_input_img_path: str = 'button_templates/sample_name_input.png', 
+                 export_button_img_path: str = 'button_templates/export_button.png',
+                 separate_spectrum_button_img_path: str = 'button_templates/separate_spectrum_button.png',
+                 new_folder_button_img_path: str = 'button_templates/new_folder_button.png',
+                 export_finish_button_img_path: str = 'button_templates/export_finish_button.png',
+                 delete_button_img_path: str = 'button_templates/delete_button.png',
+                 sync_button_img_path: str = 'button_templates/sync_button.png',
                  time_out: float = 15.0,
                  sleep_func: Callable[[float], None] = time.sleep) -> None:
         """
@@ -75,48 +77,76 @@ class LIBSAnalyzer:
         self.export_folder_path = export_folder_path
         self.time_out = time_out
         self.sleep_func = sleep_func
-        self.buttons = {
-            'measure': {
-                'pos': None,
-                'found': False,
-                'img_path': measure_button_img_path
-            },
-            'sample_name': {
-                'pos': None,
-                'found': False,
-                'img_path': sample_name_input_img_path
-            },
-            'export': {
-                'pos': None,
-                'found': False,
-                'img_path': export_button_img_path
-            },
-            'separate_spectrum': {
-                'pos': None,
-                'found': False,
-                'img_path': separate_spectrum_button_img_path
-            },
-            'new_folder': {
-                'pos': None,
-                'found': False,
-                'img_path': new_folder_button_img_path
-            },
-            'export_finish': {
-                'pos': None,
-                'found': False,
-                'img_path': export_finish_button_img_path
-            },
-            'delete': {
-                'pos': None,
-                'found': False,
-                'img_path': delete_button_img_path
-            },
-            'sync': {
-                'pos': None,
-                'found': False,
-                'img_path': sync_button_img_path
+        
+        # load or create a dictionary for button positions
+        if os.path.exists('button_positions.json'):
+            with open('button_positions.json', 'r') as f:
+                loaded_buttons = json.load(f)
+            # Convert any list positions back to tuples for 'pos'
+            for button in loaded_buttons:
+                pos = loaded_buttons[button].get('pos', None)
+                if isinstance(pos, list):
+                    loaded_buttons[button]['pos'] = tuple(pos)
+            self.buttons = loaded_buttons
+            if 'measure' in self.buttons:
+                self.buttons['measure']['img_path'] = measure_button_img_path
+            if 'sample_name' in self.buttons:
+                self.buttons['sample_name']['img_path'] = sample_name_input_img_path
+            if 'export' in self.buttons:
+                self.buttons['export']['img_path'] = export_button_img_path
+            if 'separate_spectrum' in self.buttons:
+                self.buttons['separate_spectrum']['img_path'] = separate_spectrum_button_img_path
+            if 'new_folder' in self.buttons:
+                self.buttons['new_folder']['img_path'] = new_folder_button_img_path
+            if 'export_finish' in self.buttons:
+                self.buttons['export_finish']['img_path'] = export_finish_button_img_path
+            if 'delete' in self.buttons:
+                self.buttons['delete']['img_path'] = delete_button_img_path
+            if 'sync' in self.buttons:
+                self.buttons['sync']['img_path'] = sync_button_img_path
+        else:
+            self.buttons = {
+                'measure': {
+                    'pos': None,
+                    'found': False,
+                    'img_path': measure_button_img_path
+                },
+                'sample_name': {
+                    'pos': None,
+                    'found': False,
+                    'img_path': sample_name_input_img_path
+                },
+                'export': {
+                    'pos': None,
+                    'found': False,
+                    'img_path': export_button_img_path
+                },
+                'separate_spectrum': {
+                    'pos': None,
+                    'found': False,
+                    'img_path': separate_spectrum_button_img_path
+                },
+                'new_folder': {
+                    'pos': None,
+                    'found': False,
+                    'img_path': new_folder_button_img_path
+                },
+                'export_finish': {
+                    'pos': None,
+                    'found': False,
+                    'img_path': export_finish_button_img_path
+                },
+                'delete': {
+                    'pos': None,
+                    'found': False,
+                    'img_path': delete_button_img_path
+                },
+                'sync': {
+                    'pos': None,
+                    'found': False,
+                    'img_path': sync_button_img_path
+                }
             }
-        }
         self.status = AnalyzerStatus.IDLE
         self.sample_name = ''
 
@@ -171,6 +201,9 @@ class LIBSAnalyzer:
             self.sample_name = self._name_after_time()
             print('------------------------export started------------------------')
             try:
+                if not os.path.exists(self.export_folder_path):
+                    os.makedirs(self.export_folder_path)
+                
                 n = len(os.listdir(self.export_folder_path))
                 # follow the steps below
                 # 0. type in sample name
@@ -300,9 +333,29 @@ class LIBSAnalyzer:
         Find all buttons on the screen.
         """
         for button in self.buttons:
+            
             self.buttons[button]['pos'] = self.locate_button_multi_scale(self.buttons[button]['img_path'])
             self.buttons[button]['found'] = True
             print(f'{button} found in {self.buttons[button]['pos']}')
+        
+        self._save_buttons_to_json()
+
+    def _save_buttons_to_json(self) -> None:
+        """
+        Save self.buttons to a JSON file named button_positions.json in the root directory.
+        """
+
+        # Convert any non-serializable objects (e.g., tuples) to serializable types
+        def convert(obj):
+            if isinstance(obj, tuple):
+                return list(obj)
+            if isinstance(obj, dict):
+                return {k: convert(v) for k, v in obj.items()}
+            return obj
+
+        buttons_serializable = convert(self.buttons)
+        with open('button_positions.json', 'w') as f:
+            json.dump(buttons_serializable, f, indent=4)
 
     def locate_button_multi_scale(self, button_template_path: str) -> Tuple[int, int]:
         """
@@ -388,3 +441,13 @@ class LIBSAnalyzer:
             areas[f'{start} - {stop}'] = area
 
         return areas
+    
+    def set_export_folder_path(self, new_path: str) -> None:
+        """
+        Set a new export folder path.
+
+        Args:
+            new_path (str): The new path to set as the export folder.
+        """
+        self.export_folder_path = new_path
+    

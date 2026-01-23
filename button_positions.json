@@ -1,0 +1,66 @@
+{
+    "measure": {
+        "pos": [
+            1252,
+            947
+        ],
+        "found": true,
+        "img_path": "button_templates/measure_button.png"
+    },
+    "sample_name": {
+        "pos": [
+            878,
+            872
+        ],
+        "found": true,
+        "img_path": "button_templates/sample_name_input.png"
+    },
+    "export": {
+        "pos": [
+            878,
+            872
+        ],
+        "found": true,
+        "img_path": "button_templates/export_button.png"
+    },
+    "separate_spectrum": {
+        "pos": [
+            1252,
+            947
+        ],
+        "found": true,
+        "img_path": "button_templates/separate_spectrum_button.png"
+    },
+    "new_folder": {
+        "pos": [
+            878,
+            872
+        ],
+        "found": true,
+        "img_path": "button_templates/new_folder_button.png"
+    },
+    "export_finish": {
+        "pos": [
+            1252,
+            947
+        ],
+        "found": true,
+        "img_path": "button_templates/export_finish_button.png"
+    },
+    "delete": {
+        "pos": [
+            878,
+            872
+        ],
+        "found": true,
+        "img_path": "button_templates/delete_button.png"
+    },
+    "sync": {
+        "pos": [
+            1252,
+            947
+        ],
+        "found": true,
+        "img_path": "button_templates/sync_button.png"
+    }
+}
