@@ -288,6 +288,7 @@ class LIBSAnalyzer:
                 raise
             else:
                 print('------------------------analyzation done------------------------')
+                print(res)
                 return res
             finally:
                 self.status = AnalyzerStatus.IDLE
