@@ -1,1 +1,2 @@
-A simple server based on Socket.IO implemented by Python that helps clicking the "scan" button on the GUI of SciAps's Profile Builder software.
+# LIBS Socket.IO server of AECP — Autonomous Elemental Characterization Platform
+A socket.io server based implemented by Python for operations of SciAps's Profile Builder software. This is one component of the software stack for the paper ["Autonomous elemental characterization enabled by a low cost robotic platform built upon a generalized software architecture"](https://pubs.rsc.org/en/content/articlehtml/2026/dd/d5dd00263j).
